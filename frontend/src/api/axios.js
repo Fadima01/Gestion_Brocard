@@ -1,10 +1,9 @@
 import axios from 'axios';
 
+
+
 const api = axios.create({
-  baseURL: '/api/v1', // Proxied to http://localhost:8000/api/v1
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: 'https://gestion-brocard.onrender.com/api/v1',
 });
 
 // Injecter le token JWT s'il est présent dans le localStorage
