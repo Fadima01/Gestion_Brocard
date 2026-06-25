@@ -141,6 +141,13 @@ class CaisseMouvement(TimeStampedModel):
         blank=True,
         verbose_name=_("Description / Motif")
     )
+    reference = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name=_("Référence unique")
+    )
 
     # Liaisons optionnelles avec cascade delete pour la traçabilité des opérations
     customer_payment = models.ForeignKey(
@@ -192,5 +199,11 @@ class CaisseMouvement(TimeStampedModel):
         ordering = ['-date_mouvement', '-id']
 
     def __str__(self):
-        return f"{self.get_type_mouvement_display()} | {self.montant} FCFA | {self.mode_paiement} ({self.date_mouvement.date()})"
+        return f"{self.reference or self.id} | {self.get_type_mouvement_display()} | {self.montant} FCFA | {self.mode_paiement} ({self.date_mouvement.date()})"
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(CaisseMouvement, 'CAI')
+        super().save(*args, **kwargs)
 

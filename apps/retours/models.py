@@ -13,6 +13,13 @@ class CustomerReturn(TimeStampedModel):
         INSPECTED = 'INSPECTED', _('Inspecté')
         CLOSED = 'CLOSED', _('Clôturé')
 
+    reference = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name=_("Référence unique")
+    )
     order = models.ForeignKey(
         'ventes.Order',
         on_delete=models.RESTRICT,
@@ -58,7 +65,13 @@ class CustomerReturn(TimeStampedModel):
         ]
 
     def __str__(self):
-        return f"Retour #{self.id} de la commande {self.order.reference} ({self.get_statut_retour_display()})"
+        return f"Retour {self.reference or self.id} de la commande {self.order.reference} ({self.get_statut_retour_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(CustomerReturn, 'RET')
+        super().save(*args, **kwargs)
 
 
 class ReturnLine(models.Model):

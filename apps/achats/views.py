@@ -54,7 +54,8 @@ class RawMaterialViewSet(viewsets.ModelViewSet):
             new_quantity=instance.quantite_restante_metres,
             difference=instance.quantite_restante_metres,
             operation_type=RawMaterialMovement.OperationType.PURCHASE,
-            description="Achat initial enregistré via l'interface"
+            description=f"Achat initial enregistré via l'interface (Achat Réf: {instance.fabric_purchase.reference if instance.fabric_purchase else 'N/A'})",
+            fabric_purchase=instance.fabric_purchase
         )
 
     def perform_update(self, serializer):
@@ -71,7 +72,8 @@ class RawMaterialViewSet(viewsets.ModelViewSet):
                 new_quantity=new_qty,
                 difference=diff,
                 operation_type=RawMaterialMovement.OperationType.ADJUSTMENT,
-                description="Ajustement manuel du stock"
+                description="Ajustement manuel du stock",
+                fabric_purchase=instance.fabric_purchase
             )
 
 

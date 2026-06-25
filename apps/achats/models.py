@@ -62,6 +62,13 @@ class FabricPurchase(TimeStampedModel):
         decimal_places=2,
         verbose_name=_("Montant total d'achat")
     )
+    reference = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name=_("Référence unique")
+    )
     statut_paiement = models.CharField(
         max_length=25,
         choices=PaymentStatus.choices,
@@ -81,7 +88,13 @@ class FabricPurchase(TimeStampedModel):
         ]
 
     def __str__(self):
-        return f"Achat #{self.id} du {self.date_achat} - {self.supplier.name}"
+        return f"Achat {self.reference or self.id} du {self.date_achat} - {self.supplier.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(FabricPurchase, 'ACH')
+        super().save(*args, **kwargs)
 
 
 class RawMaterial(TimeStampedModel):
@@ -115,6 +128,23 @@ class RawMaterial(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name=_("Achat associé")
+    )
+    supplier = models.ForeignKey(
+        Supplier,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="raw_materials_direct",
+        verbose_name=_("Fournisseur")
+    )
+    date_achat = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_("Date d'achat")
+    )
+    observations = models.TextField(
+        blank=True,
+        verbose_name=_("Observations")
     )
     type_matiere = models.CharField(
         max_length=100,
@@ -200,6 +230,26 @@ class RawMaterial(TimeStampedModel):
     def __str__(self):
         return f"{self.type_matiere} {self.couleur} ({self.quantite_restante_metres} {self.unite_mesure} restants)"
 
+    @property
+    def montant_total_achat(self):
+        return (self.quantite_achetee_metres or 0) * (self.prix_achat_metre or 0)
+
+    @property
+    def supplier_display(self):
+        if self.supplier:
+            return self.supplier
+        if self.fabric_purchase and self.fabric_purchase.supplier:
+            return self.fabric_purchase.supplier
+        return None
+
+    @property
+    def date_achat_display(self):
+        if self.date_achat:
+            return self.date_achat
+        if self.fabric_purchase and self.fabric_purchase.date_achat:
+            return self.fabric_purchase.date_achat
+        return self.date_reception
+
 
 class RawMaterialMovement(models.Model):
     """
@@ -253,6 +303,22 @@ class RawMaterialMovement(models.Model):
     description = models.TextField(
         blank=True,
         verbose_name=_("Description / Notes")
+    )
+    production_order = models.ForeignKey(
+        'production.ProductionOrder',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='raw_material_movements',
+        verbose_name=_("Ordre de production d'origine")
+    )
+    fabric_purchase = models.ForeignKey(
+        'achats.FabricPurchase',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='raw_material_movements',
+        verbose_name=_("Achat d'origine")
     )
 
     class Meta:

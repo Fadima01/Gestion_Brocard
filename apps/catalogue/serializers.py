@@ -64,13 +64,17 @@ class ClothingModelSerializer(serializers.ModelSerializer):
     stock_disponible = serializers.SerializerMethodField()
     stock_reserve = serializers.SerializerMethodField()
     stock_vendu = serializers.SerializerMethodField()
+    marge_brute = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    benefice_net = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
         model = ClothingModel
         fields = (
             'id', 'name', 'description', 'photo_principale', 'prix_vente_conseille', 
             'is_available', 'is_archived', 'gallery_photos', 'variants', 
-            'stock_disponible', 'stock_reserve', 'stock_vendu', 'category', 'quantite_affectee', 'created_at'
+            'stock_disponible', 'stock_reserve', 'stock_vendu', 'category', 'quantite_affectee',
+            'cout_matieres_premieres', 'cout_confection', 'depenses_associees',
+            'marge_brute', 'benefice_net', 'created_at'
         )
         read_only_fields = ('created_at',)
 

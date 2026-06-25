@@ -11,11 +11,11 @@ class DeliverySerializer(serializers.ModelSerializer):
     class Meta:
         model = Delivery
         fields = (
-            'id', 'order', 'order_reference', 'customer_name', 'customer_phone', 'order_amount', 'order_payment_status',
+            'id', 'reference', 'order', 'order_reference', 'customer_name', 'customer_phone', 'order_amount', 'order_payment_status',
             'statut_livraison', 'adresse_livraison', 
             'livreur_nom', 'livreur_prenom', 'livreur_telephone',
             'frais_livraison', 'date_livraison_reelle', 'observations',
             'montant_encaisse_livreur', 'mode_paiement_recu', 'argent_remis_a_brocard',
             'montant_remis', 'date_remise_argent', 'created_at'
         )
-        read_only_fields = ('created_at',)
+        read_only_fields = ('reference', 'created_at',)

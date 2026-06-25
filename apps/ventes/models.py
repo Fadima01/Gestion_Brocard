@@ -53,6 +53,7 @@ class Order(TimeStampedModel):
     reference = models.CharField(
         max_length=50,
         unique=True,
+        blank=True,
         verbose_name=_("Référence unique")
     )
     date_commande = models.DateTimeField(
@@ -143,6 +144,9 @@ class Order(TimeStampedModel):
             self.reste_a_payer = self.montant_total - self.acompte_verse
 
     def save(self, *args, **kwargs):
+        if not self.reference:
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(Order, 'VTE')
         self.clean()
         super().save(*args, **kwargs)
 
@@ -274,14 +278,8 @@ class CustomerPayment(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.reference:
-            last_payment = CustomerPayment.objects.exclude(reference__isnull=True).exclude(reference='').order_by('-id').first()
-            seq = 1
-            if last_payment and last_payment.reference:
-                try:
-                    seq = int(last_payment.reference.split('-')[-1]) + 1
-                except (ValueError, IndexError):
-                    pass
-            self.reference = f"PAY-{seq:04d}"
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(CustomerPayment, 'PAY')
         super().save(*args, **kwargs)
 
 
@@ -383,15 +381,8 @@ class Reservation(TimeStampedModel):
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         if not self.reference:
-            year_str = timezone.now().strftime('%Y')
-            last_res = Reservation.objects.filter(reference__startswith=f"RES-{year_str}").order_by('-id').first()
-            seq = 1
-            if last_res:
-                try:
-                    seq = int(last_res.reference.split('-')[-1]) + 1
-                except (ValueError, IndexError):
-                    pass
-            self.reference = f"RES-{year_str}-{seq:04d}"
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(Reservation, 'RES')
         self.clean()
         super().save(*args, **kwargs)
         if is_new and self.montant_verse > 0:

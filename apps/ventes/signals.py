@@ -222,23 +222,12 @@ def convert_reservation_to_sale_on_completion(sender, instance, created, **kwarg
             return
             
         with transaction.atomic():
-            date_str = timezone.now().strftime('%Y%m%d')
-            last_order = Order.objects.filter(reference__startswith=f"CMD-{date_str}").order_by('-id').first()
-            seq = 1
-            if last_order:
-                try:
-                    seq = int(last_order.reference.split('-')[-1]) + 1
-                except Exception:
-                    pass
-            reference = f"CMD-{date_str}-{seq:04d}"
-            
             variant = instance.model.variants.first()
             if not variant:
                 return
                 
             order = Order.objects.create(
                 customer=instance.customer,
-                reference=reference,
                 canal_vente=SalesChannel.BOUTIQUE,
                 statut_commande=OrderStatus.DRAFT,
                 montant_total=instance.quantite * instance.model.prix_vente_conseille,

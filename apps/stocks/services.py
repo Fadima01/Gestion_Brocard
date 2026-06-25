@@ -86,7 +86,7 @@ class InventoryService:
 
     @staticmethod
     @transaction.atomic
-    def consume_raw_material(raw_material, quantity):
+    def consume_raw_material(raw_material, quantity, production_order=None):
         """
         Consomme une quantité de tissu Brocard ou d'accessoire de la table RawMaterial.
         """
@@ -94,8 +94,12 @@ class InventoryService:
             raise ValidationError(_("La quantité de matière première consommée doit être positive."))
 
         if raw_material.quantite_restante_metres < quantity:
-            raise ValidationError(_("Stock de matière première insuffisant pour %(material)s."),
-                                  params={'material': raw_material.type_matiere})
+            raise ValidationError(_("Stock de matière première insuffisant pour %(material)s (Disponible: %(avail)s, Demandé: %(req)s)."),
+                                  params={
+                                      'material': raw_material.type_matiere,
+                                      'avail': str(raw_material.quantite_restante_metres),
+                                      'req': str(quantity)
+                                  })
 
         old_qty = raw_material.quantite_restante_metres
         raw_material.quantite_restante_metres = F('quantite_restante_metres') - quantity
@@ -111,7 +115,8 @@ class InventoryService:
             new_quantity=new_qty,
             difference=-quantity,
             operation_type=RawMaterialMovement.OperationType.CONSUMPTION,
-            description="Consommation pour ordre de production"
+            description=f"Consommation pour ordre de production {production_order.reference if production_order else ''}".strip(),
+            production_order=production_order
         )
 
         return raw_material

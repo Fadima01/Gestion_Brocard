@@ -128,6 +128,30 @@ class ProductionOrder(TimeStampedModel):
         default=PaymentStatus.UNPAID,
         verbose_name=_("Statut du paiement de la façon")
     )
+    cout_matieres_premieres_historique = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
+        verbose_name=_("Coût des matières premières (historique)")
+    )
+    cout_confection_historique = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
+        verbose_name=_("Coût de confection (historique)")
+    )
+    depenses_associees_historique = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
+        verbose_name=_("Dépenses associées (historique)")
+    )
     cout_revient_unitaire = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -207,7 +231,30 @@ class ProductionOrder(TimeStampedModel):
             else:
                 self.statut_paiement_facon = PaymentStatus.PARTIALLY_PAID
 
+        # Calcul et gel des coûts de revient lors de la complétion
+        if self.statut == ProductionStatus.COMPLETED:
+            if self.pk is not None:
+                # Coût des matières premières utilisées
+                mat_cost = sum(c.quantite_utilisee_metres * c.raw_material.prix_achat_metre for c in self.consumptions.all())
+                # Coût de la confection (façon)
+                conf_cost = self.montant_facon_total or 0
+                # Autres dépenses associées
+                exp_cost = sum(e.montant for e in self.expenses.all())
+                
+                self.cout_matieres_premieres_historique = mat_cost
+                self.cout_confection_historique = conf_cost
+                self.depenses_associees_historique = exp_cost
+                
+                total_cost = mat_cost + conf_cost + exp_cost
+                if self.quantite_produite > 0:
+                    self.cout_revient_unitaire = total_cost / self.quantite_produite
+                else:
+                    self.cout_revient_unitaire = 0
+
     def save(self, *args, **kwargs):
+        if not self.reference:
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(ProductionOrder, 'CONF')
         self.clean()
         
         # Capture de l'ancienne quantité pour l'ajustement du stock
@@ -342,14 +389,8 @@ class WorkshopPayment(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.reference:
-            last_payment = WorkshopPayment.objects.all().order_by('-id').first()
-            seq = 1
-            if last_payment and last_payment.reference:
-                try:
-                    seq = int(last_payment.reference.split('-')[-1]) + 1
-                except (ValueError, IndexError):
-                    pass
-            self.reference = f"PAY-{seq:04d}"
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(WorkshopPayment, 'PAY')
         super().save(*args, **kwargs)
 
 

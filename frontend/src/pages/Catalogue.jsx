@@ -250,11 +250,23 @@ const Catalogue = () => {
         {/* Photo & Price Tag */}
         <div className="h-52 bg-slate-950/80 relative overflow-hidden flex items-center justify-center border-b border-slate-800 p-2">
           {model.photo_principale ? (
-            <img 
-              src={model.photo_principale} 
-              alt={model.name}
-              className="w-full h-full object-contain"
-            />
+            <div className="w-full h-full flex items-center justify-center relative">
+              <img 
+                src={model.photo_principale} 
+                alt={model.name}
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.style.display = 'none';
+                  const fallback = e.target.parentNode.querySelector('.img-fallback');
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              <div className="img-fallback text-slate-600 flex-col items-center gap-2 hidden absolute inset-0 bg-slate-950 flex justify-center">
+                <Image size={44} className="text-slate-600" />
+                <span className="text-xs">Image indisponible</span>
+              </div>
+            </div>
           ) : (
             <div className="text-slate-600 flex flex-col items-center gap-2">
               <Image size={44} />

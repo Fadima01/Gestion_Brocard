@@ -12,5 +12,5 @@ class CustomerReturnSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerReturn
-        fields = ('id', 'order', 'date_retour', 'statut_retour', 'montant_rembourse', 'accredite_avoir', 'lines')
-        read_only_fields = ('date_retour',)
+        fields = ('id', 'reference', 'order', 'date_retour', 'statut_retour', 'montant_rembourse', 'accredite_avoir', 'lines')
+        read_only_fields = ('reference', 'date_retour',)

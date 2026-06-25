@@ -69,6 +69,30 @@ class ClothingModel(TimeStampedModel):
         verbose_name=_("Quantité affectée"),
         help_text=_("Nombre de robes de la catégorie globale affectées à ce design.")
     )
+    cout_matieres_premieres = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
+        verbose_name=_("Coût des matières premières")
+    )
+    cout_confection = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
+        verbose_name=_("Coût de confection")
+    )
+    depenses_associees = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        null=True,
+        blank=True,
+        verbose_name=_("Dépenses associées")
+    )
 
     class Meta:
         verbose_name = _("Modèle d'habit")
@@ -83,6 +107,14 @@ class ClothingModel(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def marge_brute(self):
+        return (self.prix_vente_conseille or 0) - (self.cout_matieres_premieres or 0) - (self.cout_confection or 0)
+
+    @property
+    def benefice_net(self):
+        return self.marge_brute - (self.depenses_associees or 0)
 
     def get_current_stock(self):
         variant = self.variants.first()

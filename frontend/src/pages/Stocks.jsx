@@ -38,6 +38,26 @@ const Stocks = () => {
   const [clothingModels, setClothingModels] = useState([]);
   const [finishedStocks, setFinishedStocks] = useState([]);
   const [finishedSearch, setFinishedSearch] = useState('');
+  const [suppliers, setSuppliers] = useState([]);
+  const [rawSupplier, setRawSupplier] = useState('');
+  const [rawDateAchat, setRawDateAchat] = useState('');
+  const [rawObservations, setRawObservations] = useState('');
+  const [selectedRawMaterial, setSelectedRawMaterial] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
+
+  const formatFCFA = (val) => {
+    const num = parseFloat(val);
+    if (isNaN(num)) return '0 FCFA';
+    return num.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' FCFA';
+  };
+
+  const formatDate = (val) => {
+    if (!val) return '-';
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '-';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
   const [finishedViewMode, setFinishedViewMode] = useState('models'); // 'models', 'variants'
   const [selectedModel, setSelectedModel] = useState(null);
   
@@ -54,8 +74,12 @@ const Stocks = () => {
     setLoading(true);
     try {
       if (activeTab === 'raw_materials') {
-        const response = await api.get('/achats/materials/');
+        const [response, supResponse] = await Promise.all([
+          api.get('/achats/materials/'),
+          api.get('/achats/suppliers/').catch(() => ({ data: [] }))
+        ]);
         setRawMaterials(response.data.results || response.data);
+        setSuppliers(supResponse.data.results || supResponse.data);
       } else if (activeTab === 'movements') {
         const [moveRes, rawRes] = await Promise.all([
           api.get('/achats/movements/'),
@@ -94,6 +118,9 @@ const Stocks = () => {
     setRawSeuilAlerte(mat.seuil_alerte);
     setRawCategory(mat.categorie || 'TISSU');
     setRawUniteMesure(mat.unite_mesure || 'mètres');
+    setRawSupplier(mat.supplier || '');
+    setRawDateAchat(mat.date_achat || '');
+    setRawObservations(mat.observations || '');
     setShowRawForm(true);
   };
 
@@ -108,6 +135,9 @@ const Stocks = () => {
     setRawSeuilAlerte('10.00');
     setRawCategory('TISSU');
     setRawUniteMesure('mètres');
+    setRawSupplier('');
+    setRawDateAchat('');
+    setRawObservations('');
     setShowRawForm(true);
   };
 
@@ -134,7 +164,10 @@ const Stocks = () => {
       date_reception: rawDateReception,
       seuil_alerte: parseFloat(rawSeuilAlerte),
       categorie: rawCategory,
-      unite_mesure: rawUniteMesure
+      unite_mesure: rawUniteMesure,
+      supplier: rawSupplier ? parseInt(rawSupplier) : null,
+      date_achat: rawDateAchat || null,
+      observations: rawObservations
     };
 
     try {
@@ -625,6 +658,30 @@ const Stocks = () => {
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Fournisseur</label>
+                      <select 
+                        value={rawSupplier} 
+                        onChange={(e) => setRawSupplier(e.target.value)} 
+                        className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-gold-500/50 text-sm"
+                      >
+                        <option value="">Sélectionner un fournisseur</option>
+                        {suppliers.map(s => (
+                          <option key={s.id} value={s.id}>{s.name} ({s.ville})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Date d'achat</label>
+                      <input 
+                        type="date" 
+                        value={rawDateAchat} 
+                        onChange={(e) => setRawDateAchat(e.target.value)} 
+                        className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-gold-500/50 text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -694,6 +751,17 @@ const Stocks = () => {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Observations</label>
+                    <textarea 
+                      value={rawObservations} 
+                      onChange={(e) => setRawObservations(e.target.value)} 
+                      rows="2"
+                      className="w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-gold-500/50 text-sm"
+                      placeholder="Observations sur la matière première (qualité, usage, défauts...)"
+                    />
+                  </div>
+
                   <div className="flex justify-end gap-3 pt-8">
                     <button 
                       type="button" 
@@ -724,13 +792,13 @@ const Stocks = () => {
               <table className="w-full text-left text-sm text-slate-300">
                 <thead className="bg-slate-900 text-xs uppercase tracking-wider text-slate-500 border-b border-slate-800">
                   <tr>
-                    <th className="px-6 py-4">Nom de la matière</th>
-                    <th className="px-6 py-4">Catégorie</th>
-                    <th className="px-6 py-4">Couleur</th>
-                    <th className="px-6 py-4 text-center">Quantité Restante</th>
-                    <th className="px-6 py-4 text-center">Alerte Seuil</th>
-                    <th className="px-6 py-4 text-right">Prix d'Achat</th>
-                    <th className="px-6 py-4 text-center">Date réception</th>
+                    <th className="px-6 py-4 text-left">Nom de la matière</th>
+                    <th className="px-6 py-4 text-left">Réf Achat</th>
+                    <th className="px-6 py-4 text-left">Fournisseur</th>
+                    <th className="px-6 py-4 text-center">Quantité Restante / Achetée</th>
+                    <th className="px-6 py-4 text-right">Prix Unitaire</th>
+                    <th className="px-6 py-4 text-right">Montant Total</th>
+                    <th className="px-6 py-4 text-center">Date d'achat</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -739,24 +807,42 @@ const Stocks = () => {
                     const isAlert = parseFloat(mat.quantite_restante_metres) < parseFloat(mat.seuil_alerte);
                     return (
                       <tr key={mat.id} className="hover:bg-slate-800/20 transition-all text-xs">
-                        <td className="px-6 py-4 font-semibold text-slate-200">
+                        <td className="px-6 py-4 font-semibold text-slate-200 text-left">
                           {mat.type_matiere}
+                          {mat.couleur && <span className="text-slate-500 font-normal ml-1">({mat.couleur})</span>}
                         </td>
-                        <td className="px-6 py-4 text-slate-300">
-                          {getCategoryLabel(mat.categorie)}
+                        <td className="px-6 py-4 text-slate-300 text-left font-mono">
+                          {mat.purchase_reference || "-"}
                         </td>
-                        <td className="px-6 py-4 text-slate-400">{mat.couleur || "-"}</td>
+                        <td className="px-6 py-4 text-slate-400 text-left">
+                          {mat.supplier_name || "-"}
+                        </td>
                         <td className="px-6 py-4 text-center font-bold">
                           <span className={`px-2.5 py-1 rounded text-xs ${isAlert ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-800 text-slate-300'}`}>
-                            {mat.quantite_restante_metres} {mat.unite_mesure || 'unités'}
+                            {parseFloat(mat.quantite_restante_metres)} / {parseFloat(mat.quantite_achetee_metres)} {mat.unite_mesure || 'unités'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center text-slate-400 font-mono text-xs">{mat.seuil_alerte} {mat.unite_mesure || 'unités'}</td>
-                        <td className="px-6 py-4 text-right font-semibold text-slate-200">{(parseFloat(mat.prix_achat_metre) || 0).toLocaleString('fr-FR')} F</td>
-                        <td className="px-6 py-4 text-center text-slate-500 text-xs">{mat.date_reception}</td>
+                        <td className="px-6 py-4 text-right font-semibold text-slate-200">
+                          {formatFCFA(mat.prix_achat_metre)}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-gold-400">
+                          {formatFCFA(mat.montant_total_achat)}
+                        </td>
+                        <td className="px-6 py-4 text-center text-slate-500">
+                          {mat.date_achat_display ? new Date(mat.date_achat_display).toLocaleDateString('fr-FR') : "-"}
+                        </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button 
+                              type="button"
+                              onClick={() => setSelectedRawMaterial(mat)}
+                              className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-all"
+                              title="Détails"
+                            >
+                              <Eye size={14} />
+                            </button>
+                            <button 
+                              type="button"
                               onClick={() => handleEditRawClick(mat)}
                               className="p-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-all"
                               title="Modifier"
@@ -765,6 +851,7 @@ const Stocks = () => {
                             </button>
                             {mat.is_archived ? (
                               <button 
+                                type="button"
                                 onClick={() => handleArchiveRaw(mat.id, false)}
                                 className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/25"
                               >
@@ -772,6 +859,7 @@ const Stocks = () => {
                               </button>
                             ) : (
                               <button 
+                                type="button"
                                 onClick={() => handleArchiveRaw(mat.id, true)}
                                 className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-all border border-rose-500/25"
                                 title="Archiver"
@@ -955,7 +1043,23 @@ const Stocks = () => {
                   <div key={model.id} className="glass-card rounded-2xl overflow-hidden border border-slate-800/80 hover:border-gold-500/30 transition-all duration-300 flex flex-col justify-between">
                     <div className="h-48 bg-slate-950 relative overflow-hidden flex items-center justify-center border-b border-slate-800">
                       {model.photo_principale ? (
-                        <img src={model.photo_principale} alt={model.name} className="w-full h-full object-cover" />
+                        <div className="w-full h-full relative flex items-center justify-center">
+                          <img 
+                            src={model.photo_principale} 
+                            alt={model.name} 
+                            className="w-full h-full object-cover" 
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.style.display = 'none';
+                              const fallback = e.target.parentNode.querySelector('.img-fallback');
+                              if (fallback) fallback.style.display = 'flex';
+                            }}
+                          />
+                          <div className="img-fallback hidden absolute inset-0 w-full h-full items-center justify-center bg-slate-950 text-slate-600 flex flex-col gap-2">
+                            <Image size={40} />
+                            <span className="text-xs">Image indisponible</span>
+                          </div>
+                        </div>
                       ) : (
                         <Image size={40} className="text-slate-600" />
                       )}
@@ -1096,7 +1200,23 @@ const Stocks = () => {
               {/* Photo */}
               <div className="h-24 w-24 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex-shrink-0 flex items-center justify-center">
                 {selectedModel.photo_principale ? (
-                  <img src={selectedModel.photo_principale} alt={selectedModel.name} className="w-full h-full object-cover" />
+                  <div className="w-full h-full relative flex items-center justify-center">
+                    <img 
+                      src={selectedModel.photo_principale} 
+                      alt={selectedModel.name} 
+                      className="w-full h-full object-cover" 
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        const fallback = e.target.parentNode.querySelector('.img-fallback');
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
+                    />
+                    <div className="img-fallback hidden absolute inset-0 w-full h-full items-center justify-center bg-slate-950 text-slate-600 flex flex-col gap-1 text-center">
+                      <Image size={24} />
+                      <span className="text-[8px]">N/A</span>
+                    </div>
+                  </div>
                 ) : (
                   <Image size={32} className="text-slate-600" />
                 )}
@@ -1326,6 +1446,93 @@ const Stocks = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DETAILS MATIERE PREMIERE */}
+      {selectedRawMaterial && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="glass-card w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-800 shadow-2xl flex flex-col justify-between">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/60">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gold-500/10 rounded-xl text-gold-400">
+                  <Package size={22} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white leading-tight">{selectedRawMaterial.type_matiere}</h2>
+                  <p className="text-xs text-slate-400">Détails de la matière première et suivi d'achat</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedRawMaterial(null)}
+                className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Informations de base */}
+                <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/60 space-y-4">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Caractéristiques</h3>
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex justify-between"><span className="text-slate-400">Catégorie :</span><span className="font-semibold text-slate-200">{getCategoryLabel(selectedRawMaterial.categorie)}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Couleur :</span><span className="font-semibold text-slate-200">{selectedRawMaterial.couleur || "-"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Unité de mesure :</span><span className="font-semibold text-slate-200">{selectedRawMaterial.unite_mesure || "unités"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Date réception :</span><span className="font-semibold text-slate-200">{selectedRawMaterial.date_reception ? new Date(selectedRawMaterial.date_reception).toLocaleDateString('fr-FR') : "-"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Statut archivage :</span><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedRawMaterial.is_archived ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>{selectedRawMaterial.is_archived ? 'Archivé' : 'Actif'}</span></div>
+                  </div>
+                </div>
+
+                {/* Suivi Financier */}
+                <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/60 space-y-4">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Suivi financier</h3>
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex justify-between"><span className="text-slate-400">Quantité achetée :</span><span className="font-semibold text-slate-200">{parseFloat(selectedRawMaterial.quantite_achetee_metres)} {selectedRawMaterial.unite_mesure}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Quantité restante :</span><span className="font-bold text-slate-200">{parseFloat(selectedRawMaterial.quantite_restante_metres)} {selectedRawMaterial.unite_mesure}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Prix unitaire :</span><span className="font-semibold text-slate-200">{formatFCFA(selectedRawMaterial.prix_achat_metre)}</span></div>
+                    <div className="flex justify-between border-t border-slate-800/60 pt-2"><span className="text-slate-400 font-bold">Montant total d'achat :</span><span className="font-extrabold text-gold-400">{formatFCFA(selectedRawMaterial.montant_total_achat)}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Fournisseur & Achat lié */}
+              <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/60 space-y-4">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Suivi d'achat et Fournisseur</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-2">
+                    <div className="flex justify-between"><span className="text-slate-400">Fournisseur :</span><span className="font-semibold text-slate-200">{selectedRawMaterial.supplier_name || "-"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Réf Achat associé :</span><span className="font-semibold text-slate-200 font-mono">{selectedRawMaterial.purchase_reference || "-"}</span></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between"><span className="text-slate-400">Date d'achat :</span><span className="font-semibold text-slate-200">{selectedRawMaterial.date_achat_display ? new Date(selectedRawMaterial.date_achat_display).toLocaleDateString('fr-FR') : "-"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Seuil d'alerte :</span><span className="font-semibold text-rose-400">{parseFloat(selectedRawMaterial.seuil_alerte)} {selectedRawMaterial.unite_mesure}</span></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Observations */}
+              {selectedRawMaterial.observations && (
+                <div className="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/60 space-y-2">
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Observations / Notes</h3>
+                  <p className="text-xs text-slate-300 italic whitespace-pre-wrap">{selectedRawMaterial.observations}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-slate-800/80 bg-slate-900/20 flex justify-end">
+              <button 
+                onClick={() => setSelectedRawMaterial(null)}
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-xs transition-all"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}

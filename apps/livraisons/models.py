@@ -110,14 +110,8 @@ class Delivery(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.reference:
-            last_delivery = Delivery.objects.all().order_by('-id').first()
-            seq = 1
-            if last_delivery and last_delivery.reference:
-                try:
-                    seq = int(last_delivery.reference.split('-')[-1]) + 1
-                except (ValueError, IndexError):
-                    pass
-            self.reference = f"LIV-{seq:04d}"
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(Delivery, 'LIV')
 
         is_new = self.pk is None
         old_remis = False

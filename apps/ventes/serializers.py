@@ -46,10 +46,10 @@ class CustomerPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerPayment
         fields = (
-            'id', 'order', 'reservation', 'session_caisse', 'date_paiement', 
+            'id', 'reference', 'order', 'reservation', 'session_caisse', 'date_paiement', 
             'montant', 'type_paiement', 'mode_paiement', 'notes'
         )
-        read_only_fields = ('date_paiement',)
+        read_only_fields = ('reference', 'date_paiement',)
 
 
 class OrderLineWriteSerializer(serializers.Serializer):

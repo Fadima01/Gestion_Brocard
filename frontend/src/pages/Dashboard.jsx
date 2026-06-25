@@ -204,11 +204,22 @@ const Dashboard = () => {
                     <tr key={item.id} className="hover:bg-slate-800/20 transition-all">
                       <td className="py-3">
                         {item.photo ? (
-                          <img 
-                            src={item.photo} 
-                            alt={item.name} 
-                            className="w-[50px] h-[50px] object-contain rounded-md bg-slate-950/40"
-                          />
+                          <div className="w-[50px] h-[50px] relative flex items-center justify-center rounded-md bg-slate-950/40">
+                            <img 
+                              src={item.photo} 
+                              alt={item.name} 
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                                const fallback = e.target.parentNode.querySelector('.img-fallback');
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div className="img-fallback hidden absolute inset-0 w-full h-full items-center justify-center bg-slate-900 border border-slate-800 text-[8px] text-slate-500 text-center font-medium leading-tight px-0.5">
+                              N/A
+                            </div>
+                          </div>
                         ) : (
                           <div className="w-[50px] h-[50px] flex items-center justify-center rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-500 text-center font-medium leading-tight px-1">
                             Aucune photo

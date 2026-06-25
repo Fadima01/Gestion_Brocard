@@ -465,12 +465,27 @@ const Reservations = () => {
                         {res.customer_phone}
                       </td>
                       <td className="px-4 py-3 flex items-center gap-3">
-                        {res.model_image && (
-                          <img 
-                            src={res.model_image} 
-                            alt={res.model_name} 
-                            className="w-10 h-10 object-cover rounded-lg border border-slate-850"
-                          />
+                        {res.model_image ? (
+                          <div className="w-10 h-10 relative flex items-center justify-center rounded-lg border border-slate-850 overflow-hidden">
+                            <img 
+                              src={res.model_image} 
+                              alt={res.model_name} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                                const fallback = e.target.parentNode.querySelector('.img-fallback');
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div className="img-fallback hidden absolute inset-0 w-full h-full items-center justify-center bg-slate-900 text-[8px] text-slate-500 text-center font-medium">
+                              N/A
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-850 bg-slate-900 text-[10px] text-slate-500">
+                            N/A
+                          </div>
                         )}
                         <span className="font-semibold text-slate-200">{res.model_name}</span>
                       </td>

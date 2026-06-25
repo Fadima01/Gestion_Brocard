@@ -103,6 +103,13 @@ class MonthlyCompensation(TimeStampedModel):
         default=PaymentStatus.UNPAID,
         verbose_name=_("Statut du paiement")
     )
+    reference = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name=_("Référence unique")
+    )
 
     class Meta:
         verbose_name = _("Rémunération mensuelle")
@@ -148,7 +155,7 @@ class MonthlyCompensation(TimeStampedModel):
         ]
 
     def __str__(self):
-        return f"{self.member.get_full_name()} - {self.mois}/{self.annee} ({self.get_payment_status_display()})"
+        return f"{self.reference or self.id} - {self.member.get_full_name()} - {self.mois}/{self.annee} ({self.get_payment_status_display()})"
 
     def clean(self):
         super().clean()
@@ -158,6 +165,9 @@ class MonthlyCompensation(TimeStampedModel):
             self.amount_remaining = self.net_amount_payable - self.paid_amount
 
     def save(self, *args, **kwargs):
+        if not self.reference:
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(MonthlyCompensation, 'REM')
         self.clean()
         super().save(*args, **kwargs)
 
@@ -215,14 +225,8 @@ class SalaryAdvance(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.reference:
-            last_adv = SalaryAdvance.objects.all().order_by('-id').first()
-            seq = 1
-            if last_adv and last_adv.reference:
-                try:
-                    seq = int(last_adv.reference.split('-')[-1]) + 1
-                except (ValueError, IndexError):
-                    pass
-            self.reference = f"SAL-{seq:04d}"
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(SalaryAdvance, 'SAL')
         super().save(*args, **kwargs)
 
 
@@ -283,12 +287,6 @@ class CompensationPayment(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.reference:
-            last_pay = CompensationPayment.objects.all().order_by('-id').first()
-            seq = 1
-            if last_pay and last_pay.reference:
-                try:
-                    seq = int(last_pay.reference.split('-')[-1]) + 1
-                except (ValueError, IndexError):
-                    pass
-            self.reference = f"SAL-{seq:04d}"
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(CompensationPayment, 'SAL')
         super().save(*args, **kwargs)

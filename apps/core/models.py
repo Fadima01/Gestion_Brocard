@@ -163,3 +163,22 @@ def log_activity(user, action, details=""):
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to log activity: {e}")
+
+
+class ReferenceSequence(models.Model):
+    """
+    Séquenceur de numérotation pour garantir des références séquentielles,
+    uniques, indépendantes et jamais réutilisées (même après suppression).
+    """
+    prefix = models.CharField(max_length=20, verbose_name=_("Préfixe du document"))
+    year = models.IntegerField(verbose_name=_("Année"))
+    last_sequence = models.IntegerField(default=0, verbose_name=_("Dernière séquence générée"))
+
+    class Meta:
+        verbose_name = _("Séquence de référence")
+        verbose_name_plural = _("Séquences de références")
+        unique_together = ('prefix', 'year')
+
+    def __str__(self):
+        return f"{self.prefix}-{self.year} : {self.last_sequence}"
+

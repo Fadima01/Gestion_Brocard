@@ -611,11 +611,22 @@ const Rapports = () => {
                           <tr key={idx} className="hover:bg-slate-800/10 transition text-xs">
                             <td className="px-6 py-4">
                               {item.image ? (
-                                <img 
-                                  src={item.image} 
-                                  alt={item.name} 
-                                  className="w-12 h-12 object-contain rounded-lg border border-slate-800"
-                                />
+                                <div className="w-12 h-12 relative flex items-center justify-center rounded-lg border border-slate-800 bg-slate-950 overflow-hidden">
+                                  <img 
+                                    src={item.image} 
+                                    alt={item.name} 
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.style.display = 'none';
+                                      const fallback = e.target.parentNode.querySelector('.img-fallback');
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                  />
+                                  <div className="img-fallback hidden absolute inset-0 w-full h-full items-center justify-center bg-slate-900 text-[8px] text-slate-500 text-center font-medium">
+                                    N/A
+                                  </div>
+                                </div>
                               ) : (
                                 <div className="w-12 h-12 bg-slate-950 flex items-center justify-center rounded-lg border border-slate-800 text-slate-600 text-[10px]">
                                   Pas d'image
@@ -994,12 +1005,22 @@ const Rapports = () => {
                               <tr key={f.id} className="hover:bg-slate-800/10 transition text-xs">
                                 <td className="px-6 py-4">
                                   {f.model_image ? (
-                                    <img 
-                                      src={f.model_image} 
-                                      alt={f.model_name} 
-                                      className="w-12 h-12 object-contain rounded-lg border border-slate-800"
-                                      style={{ objectFit: 'contain' }}
-                                    />
+                                    <div className="w-12 h-12 relative flex items-center justify-center rounded-lg border border-slate-800 bg-slate-950 overflow-hidden">
+                                      <img 
+                                        src={f.model_image} 
+                                        alt={f.model_name} 
+                                        className="w-full h-full object-contain"
+                                        onError={(e) => {
+                                          e.target.onerror = null;
+                                          e.target.style.display = 'none';
+                                          const fallback = e.target.parentNode.querySelector('.img-fallback');
+                                          if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                      />
+                                      <div className="img-fallback hidden absolute inset-0 w-full h-full items-center justify-center bg-slate-900 text-[8px] text-slate-500 text-center font-medium">
+                                        N/A
+                                      </div>
+                                    </div>
                                   ) : (
                                     <div className="w-12 h-12 bg-slate-950 flex items-center justify-center rounded-lg border border-slate-800 text-slate-600 text-[10px]">
                                       Pas d'image

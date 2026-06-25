@@ -360,19 +360,8 @@ class ReservationViewSet(viewsets.ModelViewSet):
                 )
                 return Response(ReservationSerializer(reservation, context={'request': request}).data)
                 
-            date_str = timezone.now().strftime('%Y%m%d')
-            last_order = Order.objects.filter(reference__startswith=f"CMD-{date_str}").order_by('-id').first()
-            seq = 1
-            if last_order:
-                try:
-                    seq = int(last_order.reference.split('-')[-1]) + 1
-                except Exception:
-                    pass
-            reference = f"CMD-{date_str}-{seq:04d}"
-            
             order = Order.objects.create(
                 customer=reservation.customer,
-                reference=reference,
                 canal_vente=SalesChannel.BOUTIQUE,
                 statut_commande=OrderStatus.DRAFT,
                 montant_total=reservation.quantite * reservation.model.prix_vente_conseille,

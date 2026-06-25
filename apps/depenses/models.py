@@ -74,12 +74,6 @@ class Expense(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if not self.reference:
-            last_expense = Expense.objects.all().order_by('-id').first()
-            seq = 1
-            if last_expense and last_expense.reference:
-                try:
-                    seq = int(last_expense.reference.split('-')[-1]) + 1
-                except (ValueError, IndexError):
-                    pass
-            self.reference = f"REG-{seq:04d}"
+            from apps.core.utils import generate_unique_reference
+            self.reference = generate_unique_reference(Expense, 'DEP')
         super().save(*args, **kwargs)

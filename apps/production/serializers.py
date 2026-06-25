@@ -17,8 +17,8 @@ class MaterialConsumptionSerializer(serializers.ModelSerializer):
 class WorkshopPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkshopPayment
-        fields = ('id', 'production_order', 'date_paiement', 'montant', 'mode_paiement', 'reference_transaction', 'notes')
-        read_only_fields = ('date_paiement',)
+        fields = ('id', 'reference', 'production_order', 'date_paiement', 'montant', 'mode_paiement', 'reference_transaction', 'notes')
+        read_only_fields = ('reference', 'date_paiement',)
 
 
 class ProductionReceiptSerializer(serializers.ModelSerializer):
@@ -49,9 +49,14 @@ class ProductionOrderSerializer(serializers.ModelSerializer):
             'date_fin_prevue', 'date_fin_reelle', 'quantite_demandee', 
             'quantite_produite', 'quantite_manquante', 'pieces_defectueuses', 'cout_facon_unitaire', 
             'montant_facon_total', 'montant_facon_paye', 'reste_a_payer', 'statut_paiement_facon',
-            'cout_revient_unitaire', 'consumptions', 'payments', 'materials_data', 'default_variant_id', 'receipts'
+            'cout_revient_unitaire', 'cout_matieres_premieres_historique', 'cout_confection_historique', 
+            'depenses_associees_historique', 'consumptions', 'payments', 'materials_data', 'default_variant_id', 'receipts'
         )
-        read_only_fields = ('reference', 'montant_facon_total', 'montant_facon_paye', 'statut_paiement_facon', 'cout_revient_unitaire')
+        read_only_fields = (
+            'reference', 'montant_facon_total', 'montant_facon_paye', 'statut_paiement_facon', 
+            'cout_revient_unitaire', 'cout_matieres_premieres_historique', 
+            'cout_confection_historique', 'depenses_associees_historique'
+        )
 
     def get_category_name(self, obj):
         return str(obj.category) if obj.category else None

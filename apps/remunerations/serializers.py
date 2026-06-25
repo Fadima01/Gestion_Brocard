@@ -15,8 +15,8 @@ class SalaryAdvanceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SalaryAdvance
-        fields = ('id', 'member', 'grant_date', 'amount', 'status', 'notes')
-        read_only_fields = ('status',)
+        fields = ('id', 'reference', 'member', 'grant_date', 'amount', 'status', 'notes')
+        read_only_fields = ('reference', 'status',)
 
     def validate(self, attrs):
         if 'grant_date' not in attrs or attrs['grant_date'] is None:
@@ -28,17 +28,18 @@ class SalaryAdvanceSerializer(serializers.ModelSerializer):
 class CompensationPaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompensationPayment
-        fields = ('id', 'monthly_compensation', 'payment_date', 'amount', 'payment_mode', 'transaction_reference', 'notes')
-        read_only_fields = ('payment_date',)
+        fields = ('id', 'reference', 'monthly_compensation', 'payment_date', 'amount', 'payment_mode', 'transaction_reference', 'notes')
+        read_only_fields = ('reference', 'payment_date',)
 
 
 class MonthlyCompensationSerializer(serializers.ModelSerializer):
     payments = CompensationPaymentSerializer(many=True, read_only=True)
+    member_name = serializers.CharField(source='member.get_full_name', read_only=True)
 
     class Meta:
         model = MonthlyCompensation
         fields = (
-            'id', 'member', 'mois', 'annee', 'montant_du', 'avances_deduites', 
+            'id', 'reference', 'member', 'member_name', 'mois', 'annee', 'montant_du', 'avances_deduites', 
             'net_amount_payable', 'paid_amount', 'amount_remaining', 'payment_status', 'payments'
         )
-        read_only_fields = ('avances_deduites', 'net_amount_payable', 'paid_amount', 'amount_remaining', 'payment_status')
+        read_only_fields = ('reference', 'avances_deduites', 'net_amount_payable', 'paid_amount', 'amount_remaining', 'payment_status')

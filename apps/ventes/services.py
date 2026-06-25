@@ -22,18 +22,9 @@ class OrderService:
         if not lines_data:
             raise ValidationError(_("Une commande doit comporter au moins une ligne."))
 
-        # Génération de la référence unique
-        date_str = timezone.now().strftime('%Y%m%d')
-        last_order = Order.objects.filter(reference__startswith=f"CMD-{date_str}").order_by('-id').first()
-        seq = 1
-        if last_order:
-            seq = int(last_order.reference.split('-')[-1]) + 1
-        reference = f"CMD-{date_str}-{seq:04d}"
-
         # Création de l'entité commande (montant initialisé à 0)
         order = Order.objects.create(
             customer=customer,
-            reference=reference,
             canal_vente=sales_channel,
             statut_commande=OrderStatus.DRAFT,
             montant_total=0,

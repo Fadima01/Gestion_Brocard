@@ -20,7 +20,7 @@ class CaisseMouvementSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaisseMouvement
         fields = (
-            'id', 'date_mouvement', 'type_mouvement', 'montant', 
+            'id', 'reference', 'date_mouvement', 'type_mouvement', 'montant', 
             'mode_paiement', 'description', 'created_at'
         )
-        read_only_fields = ('created_at',)
+        read_only_fields = ('reference', 'created_at',)

@@ -19,18 +19,7 @@ class ProductionService:
         Crée un ordre de production (OF) et affecte les matières premières nécessaires.
         materials_data format: [{'raw_material': RawMaterial, 'quantity_used': Decimal}]
         """
-        # Génération d'une référence unique simple : BR001, BR002...
-        import re
-        last_op = ProductionOrder.objects.filter(reference__startswith="BR").order_by('-id').first()
-        seq = 1
-        if last_op:
-            match = re.search(r'BR(\d+)', last_op.reference)
-            if match:
-                seq = int(match.group(1)) + 1
-        reference = f"BR{seq:03d}"
-
         order = ProductionOrder.objects.create(
-            reference=reference,
             workshop=workshop,
             model=model,
             category=category,
@@ -47,7 +36,7 @@ class ProductionService:
             qty = item['quantity_used']
 
             # Consommation de matière première
-            InventoryService.consume_raw_material(raw_material, qty)
+            InventoryService.consume_raw_material(raw_material, qty, production_order=order)
 
             # Liaison de la consommation à l'ordre de production
             MaterialConsumption.objects.create(
